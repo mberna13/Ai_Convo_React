@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState, useRef, useEffect} from "react";
 import axios from "axios";
 
 export default function AIConvoApp() {
@@ -6,24 +6,43 @@ export default function AIConvoApp() {
     const [pollingInterval, setPollingInterval] = useState(null);
     const [conversation, setConversation] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const chatContainerRef = useRef(null);
+
+    // Auto-scroll when conversation updates
+    useEffect(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, [conversation]);
 
     // Color-code lines by model
     const parseConvo = (convString) => {
-        // Split by newlines
-        const lines = convString.split("\n").filter((l) => l.trim() !== "");
+        const lines = convString.split("\n").filter(Boolean);
+
         return lines.map((line, i) => {
-            let textColor = "text-white"; // default
-            // Match lines that start with the model name
-            if (line.startsWith("GPT4O:")) textColor = "text-red-400";
-            else if (line.startsWith("GEMINI:")) textColor = "text-blue-400";
-            else if (line.startsWith("DEEPSEEK:")) textColor = "text-purple-400";
+            const colonIndex = line.indexOf(":");
+            if (colonIndex === -1) return null;
+
+            const senderRaw = line.substring(0, colonIndex);
+            const sender = senderRaw.trimEnd(); // remove trailing whitespace
+            console.log("DEBUG:", sender, [...sender].map(c => c.charCodeAt(0)));
+            const content = line.substring(colonIndex + 1).trim();
+
+            const colorMap = {
+                "GPT": "text-red-500",
+                "Gemini": "text-blue-500",
+                "DeepSeek": "text-purple-500",
+            };
+
+            const color = colorMap[sender] || "text-grey-600";
 
             return (
                 <div
                     key={i}
-                    className={`mb-2 ${textColor} text-left whitespace-pre-wrap break-words`}
+                    className="bg-gray-200 rounded-xl px-4 py-3 mb-3 shadow-sm text-left"
                 >
-                    {line}
+                    <span className={`font-bold ${color}`}>{sender}:</span>{" "}
+                    <span className="text-gray-900">{content}</span>
                 </div>
             );
         });
@@ -114,9 +133,10 @@ export default function AIConvoApp() {
 
                 {/* Chat window */}
                 <div
+                    ref={chatContainerRef}
                     className="relative w-full p-4 border-4 border-blue-300 rounded-md
                      shadow-lg overflow-y-scroll h-[400px] bg-gray-900 text-left"
-                    style={{ boxShadow: "0 0 20px rgba(0, 127, 255, 0.5)" }}
+                    style={{boxShadow: "0 0 20px rgba(0, 127, 255, 0.5)"}}
                 >
                     {conversation ? (
                         parseConvo(conversation)
