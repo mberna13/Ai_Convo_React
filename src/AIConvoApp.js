@@ -33,7 +33,7 @@ export default function AIConvoApp() {
                 "Gemini": "text-blue-500",
                 "DeepSeek": "text-purple-500",
             };
-
+            // Default color for unknown LLM
             const color = colorMap[sender] || "text-grey-600";
 
             return (
